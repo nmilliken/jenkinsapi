@@ -1,5 +1,5 @@
-import urlparse
-import urllib2
+import urllib.parse
+import urllib.request, urllib.error, urllib.parse
 from jenkinsapi.artifact import Artifact
 from jenkinsapi import config
 from jenkinsapi.jenkinsbase import JenkinsBase
@@ -271,10 +271,10 @@ class Build(JenkinsBase):
         if not self.is_running():
             return False
 
-        stopbuildurl = urlparse.urljoin(self.baseurl, 'stop')
+        stopbuildurl = urllib.parse.urljoin(self.baseurl, 'stop')
         try:
             self.post_data(stopbuildurl, '')
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             # The request doesn't have a response, so it returns 404,
             # it's the expected behaviour
             pass

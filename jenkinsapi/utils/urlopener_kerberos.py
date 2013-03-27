@@ -1,7 +1,7 @@
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import kerberos as krb
 
-class KerberosAuthHandler(urllib2.BaseHandler):
+class KerberosAuthHandler(urllib.request.BaseHandler):
     """
     A BaseHandler class that will add Kerberos Auth headers to a request
     """
@@ -25,7 +25,7 @@ def mkkrbopener( jenkinsurl ):
     handlers = []
     for handler in get_kerberos_auth_handler(jenkinsurl=jenkinsurl):
         handlers.append(handler)
-    opener = urllib2.build_opener(*handlers)
+    opener = urllib.request.build_opener(*handlers)
     return opener.open
     
 def get_kerberos_auth_handler(jenkinsurl):
