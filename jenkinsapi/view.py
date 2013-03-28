@@ -1,6 +1,9 @@
 from jenkinsapi.jenkinsbase import JenkinsBase
 from jenkinsapi.job import Job
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
+
 
 class View(JenkinsBase):
 
@@ -12,26 +15,26 @@ class View(JenkinsBase):
     def __str__(self):
         return self.name
 
-    def __getitem__(self, str_job_id ):
-        assert isinstance( str_job_id, str )
-        api_url = self.python_api_url( self.get_job_url( str_job_id ) )
-        return Job( api_url, str_job_id, self.jenkins_obj )
+    def __getitem__(self, str_job_id):
+        assert isinstance(str_job_id, str)
+        api_url = self.python_api_url(self.get_job_url(str_job_id))
+        return Job(api_url, str_job_id, self.jenkins_obj)
 
     def keys(self):
         return list(self.get_job_dict().keys())
 
     def iteritems(self):
         for name, url in self.get_job_dict().items():
-            api_url = self.python_api_url( url )
-            yield name, Job( api_url, name, self.jenkins_obj )
+            api_url = self.python_api_url(url)
+            yield name, Job(api_url, name, self.jenkins_obj)
 
     def values(self):
-        return [ a[1] for a in self.items() ]
+        return [a[1] for a in self.items()]
 
     def items(self):
-        return [ a for a in self.items() ]
+        return [a for a in self.items()]
 
-    def _get_jobs( self ):
+    def _get_jobs(self):
         if "jobs" not in self._data:
             pass
         else:
@@ -39,46 +42,45 @@ class View(JenkinsBase):
                 yield viewdict["name"], viewdict["url"]
 
     def get_job_dict(self):
-        return dict( self._get_jobs() )
+        return dict(self._get_jobs())
 
     def __len__(self):
-        return len( list(self.get_job_dict().keys()) )
+        return len(list(self.get_job_dict().keys()))
 
-    def get_job_url( self, str_job_name ):
+    def get_job_url(self, str_job_name):
         try:
             job_dict = self.get_job_dict()
-            return job_dict[ str_job_name ]
+            return job_dict[str_job_name]
         except KeyError:
             #noinspection PyUnboundLocalVariable
-            all_views = ", ".join( list(job_dict.keys()) )
-            raise KeyError("Job %s is not known - available: %s" % ( str_job_name, all_views ) )
+            all_views = ", ".join(list(job_dict.keys()))
+            raise KeyError("Job %s is not known - available: %s" % (str_job_name, all_views))
 
     def get_jenkins_obj(self):
         return self.jenkins_obj
 
     def add_job(self, str_job_name):
         if str_job_name in self.get_job_dict():
-            return "Job %s has in View %s" %(str_job_name, self.name)
+            return "Job %s has in View %s" % (str_job_name, self.name)
         elif not self.get_jenkins_obj().has_job(str_job_name):
-            return "Job %s is not known - available: %s" % ( str_job_name, ", ".join(self.get_jenkins_obj().get_jobs_list()))
+            return "Job %s is not known - available: %s" % (str_job_name, ", ".join(self.get_jenkins_obj().get_jobs_list()))
         else:
             data = {
-                "description":"",
-                "statusFilter":"",
-                "useincluderegex":"on",
-                "includeRegex":"",
-                "columns": [{"stapler-class": "hudson.views.StatusColumn", "kind": "hudson.views.StatusColumn"}, 
-                            {"stapler-class": "hudson.views.WeatherColumn", "kind": "hudson.views.WeatherColumn"}, 
-                            {"stapler-class": "hudson.views.JobColumn", "kind": "hudson.views.JobColumn"}, 
-                            {"stapler-class": "hudson.views.LastSuccessColumn", "kind": "hudson.views.LastSuccessColumn"}, 
-                            {"stapler-class": "hudson.views.LastFailureColumn", "kind": "hudson.views.LastFailureColumn"}, 
-                            {"stapler-class": "hudson.views.LastDurationColumn", "kind": "hudson.views.LastDurationColumn"}, 
+                "description": "",
+                "statusFilter": "",
+                "useincluderegex": "on",
+                "includeRegex": "",
+                "columns": [{"stapler-class": "hudson.views.StatusColumn", "kind": "hudson.views.StatusColumn"},
+                            {"stapler-class": "hudson.views.WeatherColumn", "kind": "hudson.views.WeatherColumn"},
+                            {"stapler-class": "hudson.views.JobColumn", "kind": "hudson.views.JobColumn"},
+                            {"stapler-class": "hudson.views.LastSuccessColumn", "kind": "hudson.views.LastSuccessColumn"},
+                            {"stapler-class": "hudson.views.LastFailureColumn", "kind": "hudson.views.LastFailureColumn"},
+                            {"stapler-class": "hudson.views.LastDurationColumn", "kind": "hudson.views.LastDurationColumn"},
                             {"stapler-class": "hudson.views.BuildButtonColumn", "kind": "hudson.views.BuildButtonColumn"}],
-                "Submit":"OK",
-                }
+                "Submit": "OK"}
             data["name"] = self.name
             for job in list(self.get_job_dict().keys()):
-                data[job]='on'
+                data[job] = 'on'
             data[str_job_name] = "on"
             data['json'] = data.copy()
             self.post_data('%sconfigSubmit' % self.baseurl, urllib.parse.urlencode(data))
@@ -88,4 +90,4 @@ class View(JenkinsBase):
         """
         Calculate an ID for this object.
         """
-        return "%s.%s" % ( self.className, self.name )
+        return "%s.%s" % (self.className, self.name)

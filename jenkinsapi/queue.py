@@ -30,14 +30,13 @@ class Queue(JenkinsBase):
             return [QueueItem(**item) for item in self._data['items']]
         else:
             return [QueueItem(**item) for item in self._data['items']
-                   if item['task']['name'] == job_name]
+                    if item['task']['name'] == job_name]
 
     def delete_item(self, queue_item):
         self.delete_item_by_id(queue_item.id)
 
     def delete_item_by_id(self, item_id):
-        deleteurl = urllib.parse.urljoin(self.baseurl,
-                                     'cancelItem?id=%s' % item_id)
+        deleteurl = urllib.parse.urljoin(self.baseurl, 'cancelItem?id=%s' % item_id)
         try:
             self.post_data(deleteurl, '')
         except urllib.error.HTTPError:
@@ -55,4 +54,3 @@ class QueueItem(object):
     def __init__(self, **kwargs):
         for arg in kwargs:
             setattr(self, arg, kwargs[arg])
-
