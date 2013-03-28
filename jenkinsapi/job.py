@@ -1,7 +1,8 @@
 import logging
 import urllib.parse
-import urllib.request, urllib.error, urllib.parse
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.error
+import urllib.parse
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from time import sleep
@@ -13,12 +14,14 @@ from .exceptions import NoBuildData, NotFound, NotInQueue
 
 log = logging.getLogger(__name__)
 
+
 class Job(JenkinsBase):
     """
     Represents a jenkins job
     A job can hold N builds which are the actual execution environments
     """
-    def __init__( self, url, name, jenkins_obj ):
+
+    def __init__(self, url, name, jenkins_obj):
         self.name = name
         self.jenkins = jenkins_obj
         self._revmap = None
@@ -28,23 +31,23 @@ class Job(JenkinsBase):
             'hudson.scm.SubversionSCM': 'svn',
             'hudson.plugins.git.GitSCM': 'git',
             'hudson.plugins.mercurial.MercurialSCM': 'hg',
-            'hudson.scm.NullSCM': 'NullSCM'
-            }
-        self._scmurlmap = {
-            'svn' : lambda element_tree: [element for element in element_tree.findall('./scm/locations/hudson.scm.SubversionSCM_-ModuleLocation/remote')],
-            'git' : lambda element_tree: [element for element in element_tree.findall('./scm/userRemoteConfigs/hudson.plugins.git.UserRemoteConfig/url')],
-            'hg' : lambda element_tree: [element_tree.find('./scm/source')],
-            None : lambda element_tree: []
-            }
-        self._scmbranchmap = {
-            'svn' : lambda element_tree: [],
-            'git' : lambda element_tree: [element for element in element_tree.findall('./scm/branches/hudson.plugins.git.BranchSpec/name')],
-            'hg' : lambda  element_tree: [element_tree.find('./scm/branch')],
-            None : lambda element_tree: []
-            }
-        JenkinsBase.__init__( self, url )
+            'hudson.scm.NullSCM': 'NullSCM'}
 
-    def id( self ):
+        self._scmurlmap = {
+            'svn': lambda element_tree: [element for element in element_tree.findall('./scm/locations/hudson.scm.SubversionSCM_-ModuleLocation/remote')],
+            'git': lambda element_tree: [element for element in element_tree.findall('./scm/userRemoteConfigs/hudson.plugins.git.UserRemoteConfig/url')],
+            'hg': lambda element_tree: [element_tree.find('./scm/source')],
+            None: lambda element_tree: []}
+
+        self._scmbranchmap = {
+            'svn': lambda element_tree: [],
+            'git': lambda element_tree: [element for element in element_tree.findall('./scm/branches/hudson.plugins.git.BranchSpec/name')],
+            'hg': lambda element_tree: [element_tree.find('./scm/branch')],
+            None: lambda element_tree: []}
+
+        JenkinsBase.__init__(self, url)
+
+    def id(self):
         return self._data["name"]
 
     def __str__(self):
@@ -69,80 +72,80 @@ class Job(JenkinsBase):
             extra = "build"
         elif params:
             if token:
-                assert isinstance(token, str ), "token if provided should be a string."
+                assert isinstance(token, str), "token if provided should be a string."
                 params['token'] = token
             extra = "buildWithParameters?" + urllib.parse.urlencode(params)
         else:
-            assert isinstance(token, str ), "token if provided should be a string."
-            extra = "build?" + urllib.parse.urlencode({'token':token})
-        buildurl = urllib.parse.urljoin( self.baseurl, extra )
+            assert isinstance(token, str), "token if provided should be a string."
+            extra = "build?" + urllib.parse.urlencode({'token': token})
+        buildurl = urllib.parse.urljoin(self.baseurl, extra)
         return buildurl
 
     def invoke(self, securitytoken=None, block=False, skip_if_running=False, invoke_pre_check_delay=3, invoke_block_delay=15, params=None):
-        assert isinstance( invoke_pre_check_delay, (int, float) )
-        assert isinstance( invoke_block_delay, (int, float) )
-        assert isinstance( block, bool )
-        assert isinstance( skip_if_running, bool )
+        assert isinstance(invoke_pre_check_delay, (int, float))
+        assert isinstance(invoke_block_delay, (int, float))
+        assert isinstance(block, bool)
+        assert isinstance(skip_if_running, bool)
         if self.is_queued():
-            log.warn( "Will not request new build because %s is already queued" % self.id() )
+            log.warn("Will not request new build because %s is already queued" % self.id())
             pass
         elif self.is_running():
             if skip_if_running:
-                log.warn( "Will not request new build because %s is already running" % self.id() )
+                log.warn("Will not request new build because %s is already running" % self.id())
                 pass
             else:
-                log.warn("Will re-schedule %s even though it is already running" % self.id() )
+                log.warn("Will re-schedule %s even though it is already running" % self.id())
         original_build_no = self.get_last_buildnumber()
-        log.info( "Attempting to start %s on %s" % ( self.id(), repr(self.get_jenkins_obj()) ) )
+        log.info("Attempting to start %s on %s" % (self.id(), repr(self.get_jenkins_obj())))
         url = self.get_build_triggerurl(securitytoken, params)
         html_result = self.hit_url(url)
-        assert len( html_result ) > 0
+        assert len(html_result) > 0
         if invoke_pre_check_delay > 0:
-            log.info("Waiting for %is to allow Jenkins to catch up" % invoke_pre_check_delay )
-            sleep( invoke_pre_check_delay )
+            log.info("Waiting for %is to allow Jenkins to catch up" % invoke_pre_check_delay)
+            sleep(invoke_pre_check_delay)
         if block:
             total_wait = 0
             while self.is_queued():
-                log.info( "Waited %is for %s to begin..." % ( total_wait, self.id() ) )
-                sleep( invoke_block_delay )
+                log.info("Waited %is for %s to begin..." % (total_wait, self.id()))
+                sleep(invoke_block_delay)
                 total_wait += invoke_block_delay
             if self.is_running():
                 running_build = self.get_last_build()
-                running_build.block_until_complete( delay=invoke_pre_check_delay )
+                running_build.block_until_complete(delay=invoke_pre_check_delay)
             assert self.get_last_buildnumber() > original_build_no, "Job does not appear to have run."
         else:
             if self.is_queued():
-                log.info( "%s has been queued." % self.id() )
+                log.info("%s has been queued." % self.id())
             elif self.is_running():
-                log.info( "%s is running." % self.id() )
+                log.info("%s is running." % self.id())
             elif original_build_no < self.get_last_buildnumber():
-                log.info( "%s has completed." % self.id() )
+                log.info("%s has completed." % self.id())
             else:
                 raise AssertionError("The job did not schedule.")
 
     def _buildid_for_type(self, buildtype):
         """Gets a buildid for a given type of build"""
-        KNOWNBUILDTYPES=["lastSuccessfulBuild", "lastBuild", "lastCompletedBuild"]
+        KNOWNBUILDTYPES = ["lastSuccessfulBuild", "lastBuild", "lastCompletedBuild"]
         assert buildtype in KNOWNBUILDTYPES
-        if self._data[buildtype] == None:
+        if self._data[buildtype] is None:
             return None
         buildid = self._data[buildtype]["number"]
-        assert type(buildid) == int, "Build ID should be an integer, got %s" % repr( buildid )
+        assert type(buildid) == int, "Build ID should be an integer, got %s" % repr(buildid)
         return buildid
 
-    def get_last_good_buildnumber( self ):
+    def get_last_good_buildnumber(self):
         """
         Get the numerical ID of the last good build.
         """
         return self._buildid_for_type(buildtype="lastSuccessfulBuild")
 
-    def get_last_buildnumber( self ):
+    def get_last_buildnumber(self):
         """
         Get the numerical ID of the last build.
         """
         return self._buildid_for_type(buildtype="lastBuild")
 
-    def get_last_completed_buildnumber( self ):
+    def get_last_completed_buildnumber(self):
         """
         Get the numerical ID of the last complete build.
         """
@@ -150,8 +153,8 @@ class Job(JenkinsBase):
 
     def get_build_dict(self):
         if "builds" not in self._data:
-            raise NoBuildData( repr(self) )
-        return dict( ( a["number"], a["url"] ) for a in self._data["builds"] )
+            raise NoBuildData(repr(self))
+        return dict((a["number"], a["url"]) for a in self._data["builds"])
 
     def get_revision_dict(self):
         """
@@ -159,7 +162,7 @@ class Job(JenkinsBase):
         """
         revs = defaultdict(list)
         if 'builds' not in self._data:
-            raise NoBuildData( repr(self))
+            raise NoBuildData(repr(self))
         for buildnumber in self.get_build_ids():
             revs[self.get_build(buildnumber).get_revision()].append(buildnumber)
         return revs
@@ -168,22 +171,21 @@ class Job(JenkinsBase):
         """
         Return a sorted list of all good builds as ints.
         """
-        return reversed( sorted( self.get_build_dict().keys() ) )
+        return reversed(sorted(self.get_build_dict().keys()))
 
-    def get_last_good_build( self ):
+    def get_last_good_build(self):
         """
         Get the last good build
         """
         bn = self.get_last_good_buildnumber()
-        return self.get_build( bn )
+        return self.get_build(bn)
 
-    def get_last_build( self ):
+    def get_last_build(self):
         """
         Get the last build
         """
         buildinfo = self._data["lastBuild"]
-        return Build( buildinfo["url"], buildinfo["number"], job=self )
-
+        return Build(buildinfo["url"], buildinfo["number"], job=self)
 
     def get_last_build_or_none(self):
         """
@@ -193,16 +195,15 @@ class Job(JenkinsBase):
         if bn is not None:
             return self.get_last_build()
 
-    def get_last_completed_build( self ):
+    def get_last_completed_build(self):
         """
         Get the last build regardless of status
         """
         bn = self.get_last_completed_buildnumber()
-        return self.get_build( bn )
+        return self.get_build(bn)
 
     def get_buildnumber_for_revision(self, revision, refresh=False):
         """
-
         :param revision: subversion revision to look for, int
         :param refresh: boolean, whether or not to refresh the revision -> buildnumber map
         :return: list of buildnumbers, [int]
@@ -216,12 +217,12 @@ class Job(JenkinsBase):
         except KeyError:
             raise NotFound("Couldn't find a build with that revision")
 
-    def get_build( self, buildnumber ):
+    def get_build(self, buildnumber):
         assert type(buildnumber) == int
-        url = self.get_build_dict()[ buildnumber ]
-        return Build( url, buildnumber, job=self )
+        url = self.get_build_dict()[buildnumber]
+        return Build(url, buildnumber, job=self)
 
-    def __getitem__( self, buildnumber ):
+    def __getitem__(self, buildnumber):
         return self.get_build(buildnumber)
 
     def is_queued_or_running(self):
@@ -238,7 +239,7 @@ class Job(JenkinsBase):
             if build is not None:
                 return build.is_running()
         except NoBuildData:
-            log.info("No build info available for %s, assuming not running." % str(self) )
+            log.info("No build info available for %s, assuming not running." % str(self))
         return False
 
     def get_config(self):
@@ -256,12 +257,12 @@ class Job(JenkinsBase):
             raise exceptions.NotSupportSCM("SCM class \"%s\" not supported by API, job \"%s\"" % (scm_class, self.name))
         if scm == 'NullSCM':
             raise exceptions.NotConfiguredSCM("SCM does not configured, job \"%s\"" % self.name)
-        return scm 
+        return scm
 
     def get_scm_url(self):
         """
         Get list of project SCM urls
-        For some SCM's jenkins allow to configure and use number of SCM url's 
+        For some SCM's jenkins allow to configure and use number of SCM url's
         : return: list of SCM urls
         """
         element_tree = self._get_config_element_tree()
@@ -281,12 +282,12 @@ class Job(JenkinsBase):
     def modify_scm_branch(self, new_branch, old_branch=None):
         """
         Modify SCM ("Source Code Management") branch name for configured job.
-        :param new_branch : new repository branch name to set. 
-                            If job has multiple branches configured and "old_branch" 
-                            not provided - method will allways modify first url.
-        :param old_branch (optional): exact value of branch name to be replaced. 
-                            For some SCM's jenkins allow set multiple branches per job
-                            this parameter intended to indicate which branch need to be modified
+        :param new_branch : new repository branch name to set.
+            If job has multiple branches configured and "old_branch"
+            not provided - method will allways modify first url.
+        :param old_branch (optional): exact value of branch name to be replaced.
+            For some SCM's jenkins allow set multiple branches per job
+            this parameter intended to indicate which branch need to be modified
         """
         element_tree = self._get_config_element_tree()
         scm = self.get_scm_type()
@@ -300,15 +301,14 @@ class Job(JenkinsBase):
                     scm_branch.text = new_branch
                     self.update_config(ET.tostring(element_tree))
 
-
     def modify_scm_url(self, new_source_url, old_source_url=None):
         """
         Modify SCM ("Source Code Management") url for configured job.
-        :param new_source_url : new repository url to set. 
-                                If job has multiple repositories configured and "old_source_url" 
-                                not provided - method will allways modify first url.
+        :param new_source_url : new repository url to set.
+            If job has multiple repositories configured and "old_source_url"
+            not provided - method will allways modify first url.
         :param old_source_url (optional): for some SCM's jenkins allow set multiple repositories per job
-                                this parameter intended to indicate which repository need to be modified
+            this parameter intended to indicate which repository need to be modified
         """
         element_tree = self._get_config_element_tree()
         scm = self.get_scm_type()
@@ -318,7 +318,7 @@ class Job(JenkinsBase):
             self.update_config(ET.tostring(element_tree))
         else:
             for scm_url in scm_url_list:
-                if scm_url.text == old_source_url: 
+                if scm_url.text == old_source_url:
                     scm_url.text = new_source_url
                     self.update_config(ET.tostring(element_tree))
 
@@ -385,12 +385,12 @@ class Job(JenkinsBase):
 
     def disable(self):
         '''Disable job'''
-        disableurl = urllib.parse.urljoin(self.baseurl, 'disable' )
+        disableurl = urllib.parse.urljoin(self.baseurl, 'disable')
         return self.post_data(disableurl, '')
 
     def enable(self):
         '''Enable job'''
-        enableurl = urllib.parse.urljoin(self.baseurl, 'enable' )
+        enableurl = urllib.parse.urljoin(self.baseurl, 'enable')
         return self.post_data(enableurl, '')
 
     def delete_from_queue(self):
@@ -401,8 +401,7 @@ class Job(JenkinsBase):
         if not self.is_queued():
             raise NotInQueue()
         queue_id = self._data['queueItem']['id']
-        cancelurl = urllib.parse.urljoin(self.get_jenkins_obj().get_queue().baseurl,
-                                     'cancelItem?id=%s' % queue_id)
+        cancelurl = urllib.parse.urljoin(self.get_jenkins_obj().get_queue().baseurl, 'cancelItem?id=%s' % queue_id)
         try:
             self.post_data(cancelurl, '')
         except urllib.error.HTTPError:
@@ -410,4 +409,3 @@ class Job(JenkinsBase):
             # it's the expected behaviour
             pass
         return True
-

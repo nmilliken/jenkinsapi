@@ -1,9 +1,12 @@
 from jenkinsapi.jenkinsbase import JenkinsBase
 import logging
 import urllib.parse
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 
 log = logging.getLogger(__name__)
+
 
 class Queue(JenkinsBase):
     """
@@ -22,7 +25,7 @@ class Queue(JenkinsBase):
     def get_jenkins_obj(self):
         return self.jenkins
 
-    def get_queue_items(self, job_name = None):
+    def get_queue_items(self, job_name=None):
         if not job_name:
             return [QueueItem(**item) for item in self._data['items']]
         else:

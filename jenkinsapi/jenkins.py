@@ -9,9 +9,11 @@ from jenkinsapi import config
 from .utils.urlopener import mkurlopener, mkopener, NoAuto302Handler
 import http.cookiejar
 import logging
-import time
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.parse
+import urllib.error
+import urllib.request
+import urllib.error
 import urllib.parse
 
 try:
@@ -28,11 +30,13 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+
 class Jenkins(JenkinsBase):
     """
     Represents a jenkins environment.
     """
-    def __init__(self, baseurl, username=None, password=None, proxyhost=None, proxyport=None, proxyuser=None, proxypass=None, formauth=False, krbauth=False):
+    def __init__(self, baseurl, username=None, password=None, proxyhost=None, proxyport=None,
+                 proxyuser=None, proxypass=None, formauth=False, krbauth=False):
         """
 
         :param baseurl: baseurl for jenkins instance including port, str
@@ -72,7 +76,7 @@ class Jenkins(JenkinsBase):
         return auth_args
 
     def get_base_server_url(self):
-        return self.baseurl[:-(len(config.JENKINS_API))] 
+        return self.baseurl[:-(len(config.JENKINS_API))]
 
     def get_opener(self):
         if self.formauth:
@@ -198,9 +202,8 @@ class Jenkins(JenkinsBase):
         :param newjobname: name of new job, str
         :return: new Job obj
         """
-        qs = urllib.parse.urlencode({'name': newjobname,
-                               'mode': 'copy',
-                               'from': jobname})
+        qs = urllib.parse.urlencode({'name': newjobname, 'mode': 'copy',
+                                     'from': jobname})
         copy_job_url = urllib.parse.urljoin(self.baseurl, "createItem?%s" % qs)
         self.post_data(copy_job_url, '')
         newjk = self._clone()
@@ -212,7 +215,7 @@ class Jenkins(JenkinsBase):
         :param jobname: name of a exist job, str
         :return: new jenkins_obj
         """
-        delete_job_url = urllib.parse.urljoin(self._clone().get_job(jobname).baseurl, "doDelete" )
+        delete_job_url = urllib.parse.urljoin(self._clone().get_job(jobname).baseurl, "doDelete")
         self.post_data(delete_job_url, '')
         newjk = self._clone()
         return newjk
@@ -238,7 +241,7 @@ class Jenkins(JenkinsBase):
             yield info["name"]
 
     def keys(self):
-        return [ a for a in self.keys() ]
+        return [a for a in self.keys()]
 
     def __str__(self):
         return "Jenkins server at %s" % self.baseurl
@@ -256,7 +259,7 @@ class Jenkins(JenkinsBase):
     def get_view_url(self, str_view_name):
         try:
             view_dict = self.get_view_dict()
-            return view_dict[ str_view_name ]
+            return view_dict[str_view_name]
         except KeyError:
             #noinspection PyUnboundLocalVariable
             all_views = ", ".join(list(view_dict.keys()))
@@ -265,15 +268,15 @@ class Jenkins(JenkinsBase):
     def get_view(self, str_view_name):
         view_url = self.get_view_url(str_view_name)
         view_api_url = self.python_api_url(view_url)
-        return View(view_url , str_view_name, jenkins_obj=self)
+        return View(view_url, str_view_name, jenkins_obj=self)
 
     def get_view_by_url(self, str_view_url):
         #for nested view
         str_view_name = str_view_url.split('/view/')[-1].replace('/', '')
-        return View(str_view_url , str_view_name, jenkins_obj=self)
+        return View(str_view_url, str_view_name, jenkins_obj=self)
 
     def delete_view_by_url(self, str_url):
-        url = "%s/doDelete" %str_url
+        url = "%s/doDelete" % str_url
         self.post_data(url, '')
         newjk = self._clone()
         return newjk
@@ -295,11 +298,11 @@ class Jenkins(JenkinsBase):
             log.exception(e)
             raise
         """<div/>"""
-        if len(r) > 7: 
+        if len(r) > 7:
             return 'A view already exists with the name "%s"' % (str_view_name)
         else:
-            data = {"mode":"hudson.model.ListView", "Submit": "OK"}
-            data['name']=str_view_name
+            data = {"mode": "hudson.model.ListView", "Submit": "OK"}
+            data['name'] = str_view_name
             data['json'] = data.copy()
             params = urllib.parse.urlencode(data)
             try:
@@ -327,7 +330,7 @@ class Jenkins(JenkinsBase):
         node_dict = dict(self.get_data(url))
         return dict(
             (node['displayName'], self.python_api_url(self.get_node_url(node['displayName'])))
-                for node in node_dict['computer'])
+            for node in node_dict['computer'])
 
     def get_node(self, nodename):
         """Get a node object for a specific node"""
@@ -388,26 +391,26 @@ class Jenkins(JenkinsBase):
         :param exclusive: tied to specific job, boolean
         :return: node obj
         """
-        NODE_TYPE   = 'hudson.slaves.DumbSlave$DescriptorImpl'
+        NODE_TYPE = 'hudson.slaves.DumbSlave$DescriptorImpl'
         MODE = 'NORMAL'
         if self.has_node(name):
             return Node(nodename=name, baseurl=self.get_node_url(nodename=name), jenkins_obj=self)
         if exclusive:
             MODE = 'EXCLUSIVE'
         params = {
-            'name' : name,
-            'type' : NODE_TYPE,
-            'json' : json.dumps ({
-                'name'            : name,
-                'nodeDescription' : node_description,
-                'numExecutors'    : num_executors,
-                'remoteFS'        : remote_fs,
-                'labelString'     : labels,
-                'mode'            : MODE,
-                'type'            : NODE_TYPE,
-                'retentionStrategy' : { 'stapler-class'  : 'hudson.slaves.RetentionStrategy$Always' },
-                'nodeProperties'    : { 'stapler-class-bag' : 'true' },
-                'launcher'          : { 'stapler-class' : 'hudson.slaves.JNLPLauncher' }
+            'name': name,
+            'type': NODE_TYPE,
+            'json': json.dumps({
+            'name': name,
+            'nodeDescription': node_description,
+            'numExecutors': num_executors,
+            'remoteFS': remote_fs,
+            'labelString': labels,
+            'mode': MODE,
+            'type': NODE_TYPE,
+            'retentionStrategy': {'stapler-class': 'hudson.slaves.RetentionStrategy$Always'},
+            'nodeProperties': {'stapler-class-bag': 'true'},
+            'launcher': {'stapler-class': 'hudson.slaves.JNLPLauncher'}
             })
         }
         url = self.get_node_url() + "doCreateItem?%s" % urllib.parse.urlencode(params)
