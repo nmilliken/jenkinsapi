@@ -24,6 +24,14 @@ This library can help you:
  * Ability to search for builds by subversion revision
  * Ability to add/remove/query jenkins slaves
 
+Companies using jenkinsapi
+---------------------------
+
+Bank of America
+Credit Agricole
+John Deere
+Vertafore
+
 Important Links
 ----------------
 
@@ -58,6 +66,7 @@ Project Authors
  * William Zhang (jollychang@douban.com)
  * Victor Garcia (bravejolie@gmail.com)
  * Bradley Harris (bradley@ninelb.com)
+ * David Echols (dhechols@gmail.com)
  
 License
 --------

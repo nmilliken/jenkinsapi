@@ -8,7 +8,9 @@ This module provides a class called Artifact which allows you to download object
 and also access them as a stream.
 """
 
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import os
 import logging
 import hashlib
@@ -17,6 +19,7 @@ from jenkinsapi.exceptions import ArtifactBroken
 from jenkinsapi.fingerprint import Fingerprint
 
 log = logging.getLogger(__name__)
+
 
 class Artifact(object):
     """
@@ -89,7 +92,7 @@ class Artifact(object):
         """
         md5 = hashlib.md5()
         try:
-            with open(fspath,'rb') as f:
+            with open(fspath, 'rb') as f:
                 for chunk in iter(lambda: f.read(chunksize), ''):
                     md5.update(chunk)
         except:
@@ -105,7 +108,6 @@ class Artifact(object):
         assert os.path.isdir(dirpath)
         outputfilepath = os.path.join(dirpath, self.filename)
         return self.save(outputfilepath)
-
 
     def __repr__(self):
         """
