@@ -239,7 +239,7 @@ class Job(JenkinsBase):
             if build is not None:
                 return build.is_running()
         except NoBuildData:
-            log.info("No build info available for %s, assuming not running." % str(self))
+            log.info("No build info available for {0}, assuming not running.".format(str(self)))
         return False
 
     def get_config(self):
